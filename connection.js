@@ -16,4 +16,4 @@ try {
     console.log(json({"error while establishing connectiong with database:": error}));
 }
 
-// npx sequelize-auto -h 35.194.26.55 -d dashboard -u root -x -p 3306 --dialect mysql -o "./models"
+// npx sequelize-auto -h 34.46.208.55 -d dashboard -u usman -x CrY*#?!$&3002 -p 3306 --dialect mysql -o "./models"
