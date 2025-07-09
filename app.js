@@ -660,6 +660,6 @@ app.post('/api/donation', async(req, res)=>{
 });
 
 const PORT = 3000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, '16.170.215.152', () => {
+  console.log(`Server is running on http://16.170.215.152:${PORT}`);
 });
