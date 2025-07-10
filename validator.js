@@ -66,9 +66,9 @@ async function validateDonation(data) {
   }
 
   // Card number (Luhn)
-  if (!validator.isCreditCard(data.card_number) || !luhnCheck(data.card_number)) {
-    errors.push('Invalid card number.');
-  }
+  // if (!validator.isCreditCard(data.card_number) || !luhnCheck(data.card_number)) {
+  //   errors.push('Invalid card number.');
+  // }
 
   // Card Expiry
   const month = parseInt(data.card_exp_month, 10);

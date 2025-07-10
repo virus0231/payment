@@ -281,12 +281,18 @@ const createChargeIntent = async( stripe, paymentMethodId, customerId )=> {
       customer: customerId,
       description,
       metadata: metadata,
-      return_url: 'https://action4you.youronlineconversation.com/thank-you/'
+      return_url: global_values.website_url
     });
 
-    global_values.transaction = {"platform_id": paymentIntent.id, "charge_id": paymentIntent.latest_charge, "status": paymentIntent.status, "reason": ""};
+    if(paymentIntent && paymentIntent.id){
+      global_values.transaction = {"platform_id": paymentIntent.id, "charge_id": paymentIntent.latest_charge, "status": paymentIntent.status, "reason": ""};
+      return paymentIntent.id;
+    }else{
+      global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined", "reason": error.message};
+      return { error: paymentIntent };
+    }
+    
 
-    return paymentIntent.id;
 
   } catch (error) {
     global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined", "reason": error.message};
@@ -653,7 +659,7 @@ app.post('/api/donation', async(req, res)=>{
 
 
 
-    console.log(global_values);
+    console.log(`Gloabl Values: ${JSON.stringify(global_values)}`);
     
     res.json({ message: 'Validated and sanitized!', data: sanitizedData });
 

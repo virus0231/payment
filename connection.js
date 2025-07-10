@@ -1,10 +1,15 @@
 const { Sequelize } = require("sequelize")
 
 try {
-    const sequelize = new Sequelize('dashboard', 'usman', 'CrY*#?!$&3002', {
-        host: "34.46.208.55",
-        // host: "localhost",
+    // const sequelize = new Sequelize('dashboard', 'usman', 'CrY*#?!$&3002', {
+    //     host: "34.46.208.55",
+    //     dialect: 'mysql',
+    // });
+
+    const sequelize = new Sequelize('yoc', 'root', '', {
+        host: "localhost",
         dialect: 'mysql',
+        logging: false
         // logging: (sql, timing) => {
         //     console.log('Generated SQL:', sql);
         //     console.log('Bound Values:', timing);

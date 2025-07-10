@@ -52,7 +52,7 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     reason: {
-      type: DataTypes.STRING(255),
+      type: DataTypes.TEXT,
       allowNull: true
     },
     notes: {
