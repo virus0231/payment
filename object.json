@@ -1,0 +1,59 @@
+{
+    "client_name": "amoud",
+    "api_key": "abc123apikey",
+    "secret_key": "xyz789secret",
+    "first_name": "Usman",
+    "last_name": "Abid",
+    "organaization": "yoc",
+    "add1": "Street 242",
+    "city": "karachi",
+    "country": "Pakistan",
+    "zip": "45553",
+    "state": "sindh",
+    "phone": 42425252,
+    "email": "usmanabid0231@gmail.com",
+    "employer_name": "Ali",
+    "employer_email": "ali@gmail.com",
+    "notes": "This is test donation",
+    // "card_number": "4782780046933639", // live card
+    // "card_number": "4242424242424242", // test card
+    "card_number": "4000 0000 0000 9995", // insufficient funds
+    // "card_number": "4000 0000 0000 0069", // expired card
+    // "card_number": "4000 0000 0000 0002", // declined card
+    "card_exp_month": "07",
+    "card_exp_year": "2025",
+    "cvv": 123,
+    "client_id": "42345.25252",
+    "session_id": "35252.2525",
+    "cart": {
+        "items": [
+            {
+                "appeal_id": 4,
+                "amount_id": 2,
+                "fund_id": 0,
+                "amount": 50,
+                "quantity": 1,
+                "frequency": 0
+            },
+            {
+                "appeal_id": 2,
+                "amount_id": 0,
+                "fund_id": 0,
+                "amount": 5,
+                "quantity": 1,
+                "frequency": 0
+            },
+            {
+                "appeal_id": 1,
+                "amount_id": 6,
+                "fund_id": 0,
+                "amount": 20,
+                "quantity": 1,
+                "frequency": 1,
+                "schedule_type": "general"
+            }
+        ],
+        "card_fee": true
+    }
+  
+}
