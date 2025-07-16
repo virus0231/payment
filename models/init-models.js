@@ -11,6 +11,7 @@ var _yoc_donor = require("./yoc_donor");
 var _yoc_donor_login = require("./yoc_donor_login");
 var _yoc_employer = require("./yoc_employer");
 var _yoc_error_handling = require("./yoc_error_handling");
+var _yoc_error_log = require("./yoc_error_log");
 var _yoc_fund = require("./yoc_fund");
 var _yoc_fund_matching = require("./yoc_fund_matching");
 var _yoc_g4_request = require("./yoc_g4_request");
@@ -41,6 +42,7 @@ function initModels(sequelize) {
   var yoc_donor_login = _yoc_donor_login(sequelize, DataTypes);
   var yoc_employer = _yoc_employer(sequelize, DataTypes);
   var yoc_error_handling = _yoc_error_handling(sequelize, DataTypes);
+  var yoc_error_log = _yoc_error_log(sequelize, DataTypes);
   var yoc_fund = _yoc_fund(sequelize, DataTypes);
   var yoc_fund_matching = _yoc_fund_matching(sequelize, DataTypes);
   var yoc_g4_request = _yoc_g4_request(sequelize, DataTypes);
@@ -128,6 +130,7 @@ function initModels(sequelize) {
     yoc_donor_login,
     yoc_employer,
     yoc_error_handling,
+    yoc_error_log,
     yoc_fund,
     yoc_fund_matching,
     yoc_g4_request,

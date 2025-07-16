@@ -50,12 +50,12 @@ const orderNo =
 let global_values = {
     "donor": {},
     "client": {},
-    "card": {},
     "amount": {},
     "order_id": orderNo,
     "invoice_id": "",
     "transaction_id": "",
-    "currency": "USD"
+    "currency": "USD",
+    "transaction": {"platform_id": "", "": "", "": ""}
 };
 
 function getTimeTimestamp({ days = 0, months = 0, years = 0 }) {
@@ -177,16 +177,16 @@ const donor = async(data)=>{
 
 }
 
-const createPaymentMethod = async(stripe)=> {
+const createPaymentMethod = async(stripe,card_number,card_exp_month,card_exp_year,cvv)=> {
     
     try {
         const paymentMethod = await stripe.paymentMethods.create({
             type: 'card',
             card: {
-                number: global_values.card.card_number,
-                exp_month: global_values.card.card_exp_month,
-                exp_year: global_values.card.card_exp_year,
-                cvc: global_values.card.cvv,
+                number: card_number,
+                exp_month: card_exp_month,
+                exp_year: card_exp_year,
+                cvc: cvv,
             },
             billing_details: {
                 name: global_values.donor.first_name + " " + global_values.donor.last_name,
@@ -225,8 +225,6 @@ const createCustomer = async(stripe, pm)=>{
                 country: global_values.donor.country
             }
         });
-        
-        console.log(customer);
 
         if(customer && customer.id){
             await yoc_donor.update(
@@ -270,7 +268,6 @@ const createChargeIntent = async( stripe, paymentMethodId, customerId )=> {
         metadata[`item${index + 1}_frequency`] = String(item.frequency);
     });
 
-
     // Create PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       setup_future_usage: 'off_session',
@@ -281,54 +278,58 @@ const createChargeIntent = async( stripe, paymentMethodId, customerId )=> {
       customer: customerId,
       description,
       metadata: metadata,
-      return_url: global_values.website_url
+      return_url: global_values.client.website_url
     });
 
     if(paymentIntent && paymentIntent.id){
-      global_values.transaction = {"platform_id": paymentIntent.id, "charge_id": paymentIntent.latest_charge, "status": paymentIntent.status, "reason": ""};
+      global_values.transaction = {"platform_id": paymentIntent.id, "charge_id": paymentIntent.latest_charge, "status": paymentIntent.status};
       return paymentIntent.id;
     }else{
-      global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined", "reason": error.message};
+      global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined"};
       return { error: paymentIntent };
     }
     
 
 
   } catch (error) {
-    global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined", "reason": error.message};
+    global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined"};
     return { error: error.message };
   }
 }
 
 const innsertTransaction = async()=> {
 
-    const time = Date.now().toString(16);
-    const rand = Math.floor(Math.random() * 1000).toString(16);
-    const tid = global_values.client.client_name + "-" + time + rand;
-    global_values.invoice_id = tid;
-    console.log(tid);
+    try {
+      const time = Date.now().toString(16);
+      const rand = Math.floor(Math.random() * 1000).toString(16);
+      const tid = global_values.client.client_name + "-" + time + rand;
+      global_values.invoice_id = tid;
+      console.log(tid);
 
-    const transaction = await yoc_transaction.create({
-        client_id: global_values.client.id,
-        did: global_values.donor.id,
-        tid: tid,
-        order_id: global_values.order_id,
-        visit_id: "",
-        platform_id: global_values.transaction.platform_id,
-        charge_id: global_values.transaction.charge_id,
-        amount: global_values.amount.total_amount,
-        card_fee: global_values.amount.card_fee,
-        payment_type: "cc",
-        reason: global_values.transaction.reason,
-        notes: global_values.notes,
-        gift_aid: 0,
-        employer_match: 0,
-        status: global_values.transaction.status
-    });
+      const transaction = await yoc_transaction.create({
+          client_id: global_values.client.id,
+          did: global_values.donor.id,
+          tid: tid,
+          order_id: global_values.order_id,
+          visit_id: "",
+          platform_id: global_values.transaction.platform_id,
+          charge_id: global_values.transaction.charge_id,
+          amount: global_values.amount.total_amount,
+          card_fee: global_values.amount.card_fee,
+          payment_type: "cc",
+          reason: global_values.transaction_reason,
+          notes: global_values.notes,
+          gift_aid: 0,
+          employer_match: 0,
+          status: global_values.transaction.status
+      });
 
-    global_values.transaction_id = transaction.id;
+      global_values.transaction_id = transaction.id;
 
-    return transaction.id;
+      return transaction.id;
+    } catch (error) {
+      console.log(`Error while inserting transaction: ${error}`);
+    }
 
 }
 
@@ -431,7 +432,6 @@ const makePlan = async (stripe, customer_id, paymentMethod) => {
         }
 
         const { freq, interval } = frequencyData;
-        console.log(`Frequency for item at index ${index}: ${freq}`);
 
         // Metadata
         const metadata = {
@@ -473,7 +473,6 @@ const makePlan = async (stripe, customer_id, paymentMethod) => {
 
           insertSchedule(plan.id, sub_id, customer_id, freq, data.amount, data.appeal_id, data.amount_id, data.fund_id, data.schedule_type);
 
-          console.log(`Created price ID: ${JSON.stringify(plan)}`);
         } else {
           console.warn(`Failed to create price for item at index ${index}`);
         }
@@ -541,43 +540,64 @@ const insertSchedule = async (plan_id, sub_id, customer_id, freq, amount, appeal
 };
 
 
-const stripe = async() => {
+const stripe = async(stripe_key,card_number,card_exp_month,card_exp_year,cvv) => {
     
-    // Stripe
+    try {
+      // Stripe
 
-    const stripe = require('stripe')(global_values.client.strip_key);
+      const stripe = require('stripe')(stripe_key);
 
-    // Create Payment method
-    const paymentMethod = await createPaymentMethod(stripe);
+      // Create Payment method
+      const paymentMethod = await createPaymentMethod(stripe,card_number,card_exp_month,card_exp_year,cvv);
 
-    // Customer Id
-    const customer_id = (global_values.donor.stripe_id != "") ? global_values.donor.stripe_id : await createCustomer(stripe, paymentMethod);
+      if(paymentMethod && paymentMethod.error){
+        return {error: paymentMethod.error};
+      }
 
-    // Attach payment method
-    const attach_paymentmethod = await stripe.paymentMethods.attach(
-        paymentMethod,
-        {
-            customer: customer_id
-        }
-    );
+      // Customer Id
+      const customer_id = (global_values.donor.stripe_id != "") ? global_values.donor.stripe_id : await createCustomer(stripe, paymentMethod);
 
-    // Create Charge Intent
-    const chargeIntent = await createChargeIntent ( stripe, paymentMethod, customer_id );
+      // Attach payment method
+      try {
+        const attach_paymentmethod = await stripe.paymentMethods.attach(
+            paymentMethod,
+            {
+                customer: customer_id
+            }
+        );
 
-    // Insert Records
+        // console.log(`Try Attach: ${JSON.stringify(attach_paymentmethod)}`);
 
-    //Transaction
-    const tid = await innsertTransaction();
-    console.log(`tid: ${tid}`);
+      } catch (error) {
+        global_values.transaction_reason = error.message;
+        console.log(`Attach PaymentMethod: ${error}`);
+      }
 
-    // Transaction Detail
-    const transaction_detail = await insertTransactionDetail();
-    if(transaction_detail && transaction_detail.error){
-        console.error(transaction_detail);
+      // Create Charge Intent
+      const chargeIntent = await createChargeIntent ( stripe, paymentMethod, customer_id );
+
+      // Insert Records
+
+      //Transaction
+      const tid = await innsertTransaction();
+      // console.log(`tid: ${tid}`);
+
+      // Transaction Detail
+      const transaction_detail = await insertTransactionDetail();
+      if(transaction_detail && transaction_detail.error){
+          console.error(`Error in Transaction Detail: ${transaction_detail.error}`);
+      }
+
+      if(chargeIntent && chargeIntent.error){
+        return {error: "exit with declinde transaction"};
+      }
+
+      // Schedule
+      const schedule = makePlan(stripe, customer_id, paymentMethod);
+    } catch (error) {
+      console.error(`Error in Stripe function: ${error}`);
+      return { error: error.message };
     }
-
-    // Schedule
-    const schedule = makePlan(stripe, customer_id, paymentMethod);
 
 }
 
@@ -588,14 +608,6 @@ app.post('/api/donation', async(req, res)=>{
     if (errors.length) {
         return res.status(400).json({ errors });
     }
-
-    // Setting card value
-    global_values.card = {
-        card_number: sanitizedData.card_number,
-        card_exp_month: sanitizedData.card_exp_month,
-        card_exp_year: sanitizedData.card_exp_year,
-        card_cvv: sanitizedData.cvv
-    };
 
     // Cart Items, Quantity, Amount
     const cart = sanitizedData.cart;
@@ -624,6 +636,8 @@ app.post('/api/donation', async(req, res)=>{
     // notes
     global_values.notes = sanitizedData.notes;
 
+    let stripe_key = '';
+
     // Client authentication
     const client_status = await client_verification(sanitizedData.client_name, sanitizedData.api_key, sanitizedData.secret_key);
     if(client_status.error){
@@ -631,13 +645,12 @@ app.post('/api/donation', async(req, res)=>{
     }
     else if(client_status.id){
         try {
-            let stripe_key = '';
             if(client_status.isproduction == false){
                 stripe_key = client_status.test_stripe_key;
             }else{
                 stripe_key = client_status.live_stripe_key;
             }
-            global_values.client = {"id": client_status.id, "strip_key": stripe_key, "client_name": sanitizedData.client_name, "website_url": client_status.website_url};
+            global_values.client = {"id": client_status.id, "client_name": sanitizedData.client_name, "website_url": client_status.website_url};
         } catch (error) {
             console.log(json({"error while setting client:": error}));
         }
@@ -653,15 +666,19 @@ app.post('/api/donation', async(req, res)=>{
         console.log(json({"donor_error": donor_response}));
     }
 
-    const stripe_function = await stripe();
+    const stripe_function = await stripe(stripe_key,sanitizedData.card_number,sanitizedData.card_exp_month,sanitizedData.card_exp_year,sanitizedData.cvv);
 
-    // Insert Schedule
+    if(global_values.transaction_reason && global_values.transaction_reason != ""){
+        console.log(`Transaction Reason: ${global_values.transaction_reason}`);
+        return res.status(400).json({"error": global_values.transaction_reason});
+    }else if(stripe_function && stripe_function.error){
+        console.log(stripe_function);
+        return res.status(400).json({"error": "Unable to process payment at the moment"});
+    }else{
+      return res.json({"status": "success", "order_id": global_values.order_id, "invoice_id": global_values.invoice_id});
+    }
 
-
-
-    console.log(`Gloabl Values: ${JSON.stringify(global_values)}`);
-    
-    res.json({ message: 'Validated and sanitized!', data: sanitizedData });
+    // console.log(`Gloabl Values: ${JSON.stringify(global_values)}`);
 
 });
 
