@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('yoc_error_log', {
+  return sequelize.define('yoc_session', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -15,12 +15,8 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TEXT,
       allowNull: true
     },
-    error_list: {
+    session: {
       type: DataTypes.TEXT,
-      allowNull: false
-    },
-    from_path: {
-      type: DataTypes.STRING(300),
       allowNull: false
     },
     date: {
@@ -30,7 +26,7 @@ module.exports = function(sequelize, DataTypes) {
     }
   }, {
     sequelize,
-    tableName: 'yoc_error_log',
+    tableName: 'yoc_session',
     timestamps: false,
     indexes: [
       {

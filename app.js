@@ -21,6 +21,12 @@ const yoc_transaction_detail = yoc_transaction_detail_model(sequelize, DataTypes
 const yoc_schedule_model =  require("./models/yoc_schedule");
 const yoc_schedule = yoc_schedule_model(sequelize, DataTypes);
 
+const yoc_error_log_model =  require("./models/yoc_error_log");
+const yoc_error_log = yoc_error_log_model(sequelize, DataTypes);
+
+const yoc_session_model =  require("./models/yoc_session");
+const yoc_session = yoc_session_model(sequelize, DataTypes);
+
 // Creratee connection  with database
 sequelize.authenticate()
   .then(() => console.log('✅ Connected to MySQL'))
@@ -57,6 +63,8 @@ let global_values = {
     "currency": "USD",
     "transaction": {"platform_id": "", "": "", "": ""}
 };
+
+let error_log = [];
 
 function getTimeTimestamp({ days = 0, months = 0, years = 0 }) {
   const date = new Date();
@@ -172,6 +180,7 @@ const donor = async(data)=>{
         }
 
     } catch (error) {
+      error_log.push({"error while creating donor": error});
         return {"error": error}        
     }
 
@@ -201,7 +210,8 @@ const createPaymentMethod = async(stripe,card_number,card_exp_month,card_exp_yea
         }
 
     } catch (error) {
-        return {"error": error}
+      error_log.push({"error while creating payment method": error.message});
+      return {"error": error}
     }
 
 }
@@ -237,6 +247,7 @@ const createCustomer = async(stripe, pm)=>{
         }
 
     } catch (error) {
+        error_log.push({"error while creating customer": error});
         console.log(json({"error": error}));
         return {"error": error}
     }
@@ -292,6 +303,7 @@ const createChargeIntent = async( stripe, paymentMethodId, customerId )=> {
 
 
   } catch (error) {
+    error_log.push({"error while creating charge intent": error.message});
     global_values.transaction = {"platform_id": "", "charge_id": "", "status": "declined"};
     return { error: error.message };
   }
@@ -328,6 +340,7 @@ const innsertTransaction = async()=> {
 
       return transaction.id;
     } catch (error) {
+      error_log.push({"error while inserting transaction": error});
       console.log(`Error while inserting transaction: ${error}`);
     }
 
@@ -355,31 +368,37 @@ const insertTransactionDetail = async () => {
     return { success: true };
 
   } catch (error) {
+    error_log.push({"error while inserting transaction detail": error});
     return { error: error };
   }
 };
 
 const frequency = async(frequency) => {
-  let freq = "month";
-  let interval = 0;
-  if (frequency == 1 || frequency === "month") {
-      freq = "month";
-      interval = getTimeTimestamp({ months: 1 });
-  } else if (frequency == 2 || frequency === "yearly") {
-    freq = "yearly";
-    interval = getTimeTimestamp({ years: 1 });
-  } else if (frequency == 3 || frequency === "week") {
-    freq = "week";
-    interval = getTimeTimestamp({ days: 7 });
-  } else if (frequency == 4 || frequency === "day") {
-    freq = "day";
-    interval = getTimeTimestamp({ days: 1 });
-  } else {
-    console.warn(`invalid frequency ${frequency}`);
+  try {
+    let freq = "month";
+    let interval = 0;
+    if (frequency == 1 || frequency === "month") {
+        freq = "month";
+        interval = getTimeTimestamp({ months: 1 });
+    } else if (frequency == 2 || frequency === "yearly") {
+      freq = "yearly";
+      interval = getTimeTimestamp({ years: 1 });
+    } else if (frequency == 3 || frequency === "week") {
+      freq = "week";
+      interval = getTimeTimestamp({ days: 7 });
+    } else if (frequency == 4 || frequency === "day") {
+      freq = "day";
+      interval = getTimeTimestamp({ days: 1 });
+    } else {
+      console.warn(`invalid frequency ${frequency}`);
+      return null;
+    }
+
+    return {freq, interval}
+  } catch (error) {
+    error_log.push({"error while getting frequency": error});
     return null;
   }
-
-  return {freq, interval}
 
 }
 
@@ -411,6 +430,7 @@ const makeSubscribtion = async(stripe, customer_id, metadata, interval, items, p
     }
     
   } catch (error) {
+    error_log.push({"error while creating subscription": error});
     return { error: error }
   }
 
@@ -474,6 +494,7 @@ const makePlan = async (stripe, customer_id, paymentMethod) => {
           insertSchedule(plan.id, sub_id, customer_id, freq, data.amount, data.appeal_id, data.amount_id, data.fund_id, data.schedule_type);
 
         } else {
+          error_log.push({"Failed to create price": plan.message});
           console.warn(`Failed to create price for item at index ${index}`);
         }
       })
@@ -482,6 +503,7 @@ const makePlan = async (stripe, customer_id, paymentMethod) => {
     return { success: true };
 
   } catch (error) {
+    error_log.push({"error in makePlan": error.message});
     console.error('Error in makePlan:', error);
     return { error: error.message };
   }
@@ -533,8 +555,8 @@ const insertSchedule = async (plan_id, sub_id, customer_id, freq, amount, appeal
       start_date: startDate,
     });
 
-    console.log("Schedule created successfully: ", sch);
   } catch (error) {
+    error_log.push({"error in creating schedule": error});
     console.error("Error in creating schedule: ", error);
   }
 };
@@ -569,8 +591,9 @@ const stripe = async(stripe_key,card_number,card_exp_month,card_exp_year,cvv) =>
         // console.log(`Try Attach: ${JSON.stringify(attach_paymentmethod)}`);
 
       } catch (error) {
+        error_log.push({"error while attaching payment method": error.message});
         global_values.transaction_reason = error.message;
-        console.log(`Attach PaymentMethod: ${error}`);
+        // console.log(`Attach PaymentMethod: ${error}`);
       }
 
       // Create Charge Intent
@@ -585,17 +608,20 @@ const stripe = async(stripe_key,card_number,card_exp_month,card_exp_year,cvv) =>
       // Transaction Detail
       const transaction_detail = await insertTransactionDetail();
       if(transaction_detail && transaction_detail.error){
+          error_log.push({"error in Transaction Detail": transaction_detail.error});
           console.error(`Error in Transaction Detail: ${transaction_detail.error}`);
       }
 
       if(chargeIntent && chargeIntent.error){
-        return {error: "exit with declinde transaction"};
+        error_log.push({"error in Charge Intent": chargeIntent.error});
+        return {error: "exit with declined transaction"};
       }
 
       // Schedule
       const schedule = makePlan(stripe, customer_id, paymentMethod);
     } catch (error) {
-      console.error(`Error in Stripe function: ${error}`);
+      error_log.push({"error in Stripe function": error.message});
+      console.error(`Error in Stripe function: ${error.message}`);
       return { error: error.message };
     }
 
@@ -604,9 +630,56 @@ const stripe = async(stripe_key,card_number,card_exp_month,card_exp_year,cvv) =>
 app.post('/api/donation', async(req, res)=>{
 
     // Ddata Sanitization
-    const { sanitizedData, errors } = await validateDonation(req.body);
+    const { sanitizedData, errors } = await validateDonation(JSON.parse(JSON.stringify(req.body)));
     if (errors.length) {
         return res.status(400).json({ errors });
+    }
+
+    // Client authentication
+
+    let stripe_key = '';
+
+    const client_status = await client_verification(sanitizedData.client_name, sanitizedData.api_key, sanitizedData.secret_key);
+    if(client_status.error){
+        console.log(client_status);
+    }
+    else if(client_status.id){
+        try {
+            if(client_status.isproduction == false){
+                stripe_key = client_status.test_stripe_key;
+            }else{
+                stripe_key = client_status.live_stripe_key;
+            }
+            global_values.client = {"id": client_status.id, "client_name": sanitizedData.client_name, "website_url": client_status.website_url};
+        } catch (error) {
+            console.log(json({"error while setting client:": error}));
+        }
+    }else{
+        console.log(json({"error":"Client authentication failed"}));
+        return res.status(400).json({"client":"Unable to make transaction at the moment"});
+    }
+
+    // Insert Session
+    try {
+      let session_data = JSON.parse(JSON.stringify(req.body));;
+      delete session_data.card_number;
+      delete session_data.card_exp_month;
+      delete session_data.card_exp_year;
+      delete session_data.cvv;
+      const session = await yoc_session.create({
+          client_id: global_values.client.id,
+          order_id: global_values.order_id,
+          session: JSON.stringify(session_data),
+      });
+    } catch (error) {
+      error_log.push({"error in creating session": error});
+      console.error("Error in creating session: ", error);
+    }
+
+    try {
+      delete req.body;
+    } catch (error) {
+      console.log(`Error while deleting card details from request body: ${error}`);
     }
 
     // Cart Items, Quantity, Amount
@@ -636,43 +709,43 @@ app.post('/api/donation', async(req, res)=>{
     // notes
     global_values.notes = sanitizedData.notes;
 
-    let stripe_key = '';
-
-    // Client authentication
-    const client_status = await client_verification(sanitizedData.client_name, sanitizedData.api_key, sanitizedData.secret_key);
-    if(client_status.error){
-        console.log(client_status);
-    }
-    else if(client_status.id){
-        try {
-            if(client_status.isproduction == false){
-                stripe_key = client_status.test_stripe_key;
-            }else{
-                stripe_key = client_status.live_stripe_key;
-            }
-            global_values.client = {"id": client_status.id, "client_name": sanitizedData.client_name, "website_url": client_status.website_url};
-        } catch (error) {
-            console.log(json({"error while setting client:": error}));
-        }
-    }else{
-        console.log(json({"error":"Client authentication failed"}));
-        return res.status(400).json({"error":"Unable to make transaction at the moment"});
-    }
-
     // create donor
     const donor_response = await donor(sanitizedData);
 
     if(donor_response && donor_response.error){
-        console.log(json({"donor_error": donor_response}));
+        // console.log(json({"donor_error": donor_response}));
     }
 
     const stripe_function = await stripe(stripe_key,sanitizedData.card_number,sanitizedData.card_exp_month,sanitizedData.card_exp_year,sanitizedData.cvv);
 
+    try {
+      delete sanitizedData.card_number;
+      delete sanitizedData.card_exp_month;
+      delete sanitizedData.card_exp_year;
+      delete sanitizedData.cvv;
+    } catch (error) {
+      console.log(`Error while deleting card details from sanitized data: ${error}`);
+    }
+
+    // Insert Error Log if any
+    if(error_log.length > 0){
+        const error_log_data = JSON.stringify(error_log);
+        console.log(error_log_data);
+        try {
+            await yoc_error_log.create({
+                client_id: global_values.client.id,
+                order_id: global_values.order_id,
+                error_list: error_log_data,
+                from_path: "payment/app.js"
+            });
+        } catch (error) {
+            console.error(`Error while inserting error log: ${error}`);
+        }
+    }
+
     if(global_values.transaction_reason && global_values.transaction_reason != ""){
-        console.log(`Transaction Reason: ${global_values.transaction_reason}`);
         return res.status(400).json({"error": global_values.transaction_reason});
     }else if(stripe_function && stripe_function.error){
-        console.log(stripe_function);
         return res.status(400).json({"error": "Unable to process payment at the moment"});
     }else{
       return res.json({"status": "success", "order_id": global_values.order_id, "invoice_id": global_values.invoice_id});

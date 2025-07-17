@@ -17,6 +17,7 @@ var _yoc_fund_matching = require("./yoc_fund_matching");
 var _yoc_g4_request = require("./yoc_g4_request");
 var _yoc_otp = require("./yoc_otp");
 var _yoc_schedule = require("./yoc_schedule");
+var _yoc_session = require("./yoc_session");
 var _yoc_sf_fund = require("./yoc_sf_fund");
 var _yoc_sf_relation = require("./yoc_sf_relation");
 var _yoc_transaction = require("./yoc_transaction");
@@ -48,6 +49,7 @@ function initModels(sequelize) {
   var yoc_g4_request = _yoc_g4_request(sequelize, DataTypes);
   var yoc_otp = _yoc_otp(sequelize, DataTypes);
   var yoc_schedule = _yoc_schedule(sequelize, DataTypes);
+  var yoc_session = _yoc_session(sequelize, DataTypes);
   var yoc_sf_fund = _yoc_sf_fund(sequelize, DataTypes);
   var yoc_sf_relation = _yoc_sf_relation(sequelize, DataTypes);
   var yoc_transaction = _yoc_transaction(sequelize, DataTypes);
@@ -136,6 +138,7 @@ function initModels(sequelize) {
     yoc_g4_request,
     yoc_otp,
     yoc_schedule,
+    yoc_session,
     yoc_sf_fund,
     yoc_sf_relation,
     yoc_transaction,
