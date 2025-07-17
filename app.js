@@ -7,11 +7,24 @@ const { json } = require('body-parser');
 const moment = require('moment');
 const app = express();
 
-// Enable CORS for your frontend origin
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+];
+
+// Enable CORS for multiple origins
 app.use(cors({
-  origin: 'http://localhost:3002',
+  origin: function(origin, callback) {
+
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: 'POST',
-  allowedHeaders: 'Content-Type, Authorization'
+  allowedHeaders: 'Content-Type, Authorization',
 }));
 
 // Your existing middleware and route setup
