@@ -657,7 +657,7 @@ app.post('/api/donation', async(req, res)=>{
     // Ddata Sanitization
     const { sanitizedData, errors } = await validateDonation(JSON.parse(JSON.stringify(req.body)));
     if (errors.length) {
-        return res.status(400).json({ errors });
+        return res.status(200).json({ errors });
     }
 
     // Client authentication
@@ -681,7 +681,7 @@ app.post('/api/donation', async(req, res)=>{
         }
     }else{
         console.log(json({"error":"Client authentication failed"}));
-        return res.status(400).json({"client":"Unable to make transaction at the moment"});
+        return res.status(200).json({"client":"Unable to make transaction at the moment"});
     }
 
     // Insert Session
@@ -769,9 +769,9 @@ app.post('/api/donation', async(req, res)=>{
     }
 
     if(global_values.transaction_reason && global_values.transaction_reason != ""){
-        return res.status(400).json({"error": global_values.transaction_reason});
+        return res.status(200).json({"error": global_values.transaction_reason});
     }else if(stripe_function && stripe_function.error){
-        return res.status(400).json({"error": "Unable to process payment at the moment"});
+        return res.status(200).json({"error": "Unable to process payment at the moment"});
     }else{
       return res.json({"status": "success", "order_id": global_values.order_id, "invoice_id": global_values.invoice_id});
     }
