@@ -1,10 +1,22 @@
 const express = require('express');
+const cors = require('cors');
 const sequelize = require('./connection');
 const { DataTypes, Sequelize, Op } = require('sequelize');  
 const validateDonation =  require("./validator")
 const { json } = require('body-parser');
 const moment = require('moment');
 const app = express();
+
+// Enable CORS for your frontend origin
+app.use(cors({
+  origin: 'http://localhost:3002',
+  methods: 'POST',
+  allowedHeaders: 'Content-Type, Authorization'
+}));
+
+// Your existing middleware and route setup
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const yoc_client_model =  require("./models/yoc_client");
 const yoc_client = yoc_client_model(sequelize, DataTypes);
