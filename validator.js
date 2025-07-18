@@ -48,7 +48,7 @@ async function validateDonation(data) {
     data.email = validator.normalizeEmail(data.email);
   }
 
-  if (!validator.isEmail(data.employer_email && data.employer_email !== '')) {
+  if (!validator.isEmail(data.employer_email || '') && data.employer_email !== '') {
     errors.push('Invalid employer email.');
   } else {
     data.employer_email = validator.normalizeEmail(data.employer_email);
