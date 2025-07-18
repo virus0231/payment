@@ -29,15 +29,12 @@ async function validateDonation(data) {
 
   // Sanitize text fields (remove special chars)
   const textFields = [
-    'client_name', 'first_name', 'last_name', 'organaization', 'employer_name',
+    'client_name', 'first_name', 'last_name',
     'city', 'country', 'state', 'notes'
   ];
 
   textFields.forEach(field => {
-    if(data[field] !== '' && field == "organaization" || field == "employer_name" || field == "notes") {
-      data[field] = sanitizeText(data[field]);
-    }
-    else if (!data[field] || typeof data[field] !== 'string') {
+    if (!data[field] || typeof data[field] !== 'string') {
       errors.push(`${field} is required and must be a string.`);
     } else {
       data[field] = sanitizeText(data[field]);
