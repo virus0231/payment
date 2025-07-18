@@ -29,12 +29,15 @@ async function validateDonation(data) {
 
   // Sanitize text fields (remove special chars)
   const textFields = [
-    'client_name', 'first_name', 'last_name',
+    'client_name', 'first_name', 'last_name', 'organaization', 'employer_name',
     'city', 'country', 'state', 'notes'
   ];
 
   textFields.forEach(field => {
-    if (!data[field] || typeof data[field] !== 'string') {
+    if(data[field] !== ''){
+      data[field] = sanitizeText(data[field]);
+    }
+    else if (!data[field] || typeof data[field] !== 'string') {
       errors.push(`${field} is required and must be a string.`);
     } else {
       data[field] = sanitizeText(data[field]);
@@ -48,7 +51,7 @@ async function validateDonation(data) {
     data.email = validator.normalizeEmail(data.email);
   }
 
-  if (!validator.isEmail(data.employer_email || '')) {
+  if (!validator.isEmail(data.employer_email && data.employer_email !== '')) {
     errors.push('Invalid employer email.');
   } else {
     data.employer_email = validator.normalizeEmail(data.employer_email);
