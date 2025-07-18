@@ -34,7 +34,7 @@ async function validateDonation(data) {
   ];
 
   textFields.forEach(field => {
-    if(data[field] !== ''){
+    if(data[field] !== '' && field == "organaization" || field == "employer_name" || field == "notes") {
       data[field] = sanitizeText(data[field]);
     }
     else if (!data[field] || typeof data[field] !== 'string') {
