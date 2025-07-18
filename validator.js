@@ -29,9 +29,8 @@ async function validateDonation(data) {
 
   // Sanitize text fields (remove special chars)
   const textFields = [
-    'client_name', 'first_name', 'last_name', 'organaization',
-    'city', 'country', 'state', 'notes',
-    'employer_name'
+    'client_name', 'first_name', 'last_name',
+    'city', 'country', 'state', 'notes'
   ];
 
   textFields.forEach(field => {
