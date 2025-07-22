@@ -11,7 +11,9 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:3002',
-  'https://backend.youronlineconversation.com/donation-site/'
+  'https://backend.youronlineconversation.com/donation-site/',
+  'https://charity.youronlineconversation.com/',
+  'https://charity.youronlineconversation.com/checkout',
 ];
 
 // Enable CORS for multiple origins
